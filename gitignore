@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test uploads / temp files
+uploads/
+*.tmp
+
+# Jupyter notebooks (if any)
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# ─────────────────────────────────────────
+# DO NOT ignore these — they must be in git:
+# model.pkl
+# scaler.pkl
+# ─────────────────────────────────────────

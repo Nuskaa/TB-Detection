@@ -90,7 +90,7 @@ def train_svm(X_train, y_train):
 
 
 def train_logistic(X_train, y_train):
-    print("  🏋  Training Logistic Regression …")
+    print("   Training Logistic Regression …")
     model = LogisticRegression(max_iter=1000, random_state=RANDOM_STATE, solver="lbfgs")
     model.fit(X_train, y_train)
     print("  ✅  Logistic Regression done!\n")
@@ -104,7 +104,7 @@ def evaluate(model, X_test, y_test, name="Model"):
     y_pred = model.predict(X_test)
     acc    = accuracy_score(y_test, y_pred)
     print(f"  ── {name} ──")
-    print(f"  🎯  Accuracy : {acc*100:.2f}%")
+    print(f"  Accuracy : {acc*100:.2f}%")
     print(classification_report(y_test, y_pred, target_names=["Normal", "TB"]))
     return y_pred, acc
 
