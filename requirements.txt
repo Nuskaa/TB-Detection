@@ -1,18 +1,6 @@
-# ─────────────────────────────────────────────────────────
-#  TB Detection — Production Requirements
-#  Install locally : pip install -r requirements.txt
-#  Render installs this automatically during build
-# ─────────────────────────────────────────────────────────
-
-# Web framework
-flask==3.0.3
-gunicorn==22.0.0        # ← production WSGI server (replaces flask dev server)
-
-# ML & image processing
-numpy==1.26.4
-scikit-learn==1.4.2
-opencv-python-headless==4.9.0.80   # ← "headless" = no GUI, required on servers
-
-# Utilities (already in stdlib but pin for safety)
-pandas==2.2.2
-matplotlib==3.8.4
+flask==2.3.3
+gunicorn==22.0.0
+numpy==1.23.5
+pandas==1.5.3
+scikit-learn==1.2.2
+opencv-python-headless==4.8.1.78
