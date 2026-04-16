@@ -1,15 +1,9 @@
-# render.yaml
-# This file tells Render exactly how to build and run your app.
-# Commit this file to your GitHub repo.
-
 services:
   - type: web
-    name: tb-detection-app
-    runtime: python
+    name: tb-detection
+    env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    startCommand: gunicorn app:app
     envVars:
-      - key: FLASK_ENV
-        value: production
       - key: PYTHON_VERSION
         value: 3.11.0
