@@ -99,7 +99,7 @@ def get_severity(label, confidence):
 # ─────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────
-@app.route("/")
+@app.route("/home")
 def home():
     return render_template("index.html")
 
