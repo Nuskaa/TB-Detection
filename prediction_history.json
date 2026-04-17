@@ -1,5 +1,12 @@
 [
   {
+    "timestamp": "2026-04-17 09:43:00",
+    "filename": "Tuberculosis-8.png",
+    "prediction": "TB",
+    "confidence": 100.0,
+    "severity": "Critical Risk"
+  },
+  {
     "timestamp": "2026-04-17 09:35:53",
     "filename": "Tuberculosis-2.png",
     "prediction": "TB",
