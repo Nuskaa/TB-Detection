@@ -1,10 +1,4 @@
-"""
-=============================================================
-  TB DETECTION — MODEL TRAINING (ENHANCED)
-  Trains: SVM + Logistic Regression
-  Saves : model_svm.pkl, model_lr.pkl, scaler.pkl
-=============================================================
-"""
+
 
 import os
 import pickle
@@ -43,11 +37,11 @@ def load_dataset(dataset_dir):
     for class_name, class_id in LABEL_MAP.items():
         class_dir = os.path.join(dataset_dir, class_name)
         if not os.path.isdir(class_dir):
-            print(f"  ⚠  Not found: {class_dir}")
+            print(f"   Not found: {class_dir}")
             continue
         files = [f for f in os.listdir(class_dir)
                  if f.lower().endswith((".jpg", ".jpeg", ".png"))]
-        print(f"  📂  {class_name}: {len(files)} images")
+        print(f"    {class_name}: {len(files)} images")
         for fname in files:
             img = cv2.imread(os.path.join(class_dir, fname), cv2.IMREAD_GRAYSCALE)
             if img is None:
@@ -65,7 +59,7 @@ def load_dataset(dataset_dir):
     y = np.array(labels,  dtype=np.int32)
     df = pd.DataFrame({"filename": filenames, "label": y})
     df["class"] = df["label"].map({0: "Normal", 1: "TB"})
-    print(f"\n  ✅  Total: {len(X)}  |  Normal: {np.sum(y==0)}  |  TB: {np.sum(y==1)}\n")
+    print(f"\n   Total: {len(X)}  |  Normal: {np.sum(y==0)}  |  TB: {np.sum(y==1)}\n")
     return X, y, df
 
 
@@ -81,11 +75,11 @@ def normalize(X_train, X_test):
 # STEP 3 — TRAIN BOTH MODELS
 # ─────────────────────────────────────────────
 def train_svm(X_train, y_train):
-    print("  🏋  Training SVM (RBF kernel) …")
+    print("  Training SVM (RBF kernel) …")
     model = SVC(kernel="rbf", C=1.0, gamma="scale",
                 probability=True, random_state=RANDOM_STATE)
     model.fit(X_train, y_train)
-    print("  ✅  SVM done!\n")
+    print("   SVM done!\n")
     return model
 
 
@@ -93,7 +87,7 @@ def train_logistic(X_train, y_train):
     print("   Training Logistic Regression …")
     model = LogisticRegression(max_iter=1000, random_state=RANDOM_STATE, solver="lbfgs")
     model.fit(X_train, y_train)
-    print("  ✅  Logistic Regression done!\n")
+    print("  Logistic Regression done!\n")
     return model
 
 
@@ -198,7 +192,7 @@ def plot_results(svm_model, lr_model, X_test, y_test,
 
     plt.savefig("evaluation_report.png", dpi=150,
                 bbox_inches="tight", facecolor="#0d1117")
-    print("  📈  evaluation_report.png saved")
+    print("   evaluation_report.png saved")
     plt.show()
 
 
@@ -215,7 +209,7 @@ def save_all(svm_model, lr_model, scaler):
     for fname, obj in artifacts:
         with open(fname, "wb") as f:
             pickle.dump(obj, f)
-        print(f"  💾  Saved → {fname}")
+        print(f"   Saved → {fname}")
 
 
 # ─────────────────────────────────────────────
@@ -226,30 +220,30 @@ if __name__ == "__main__":
     print("  TB DETECTION — DUAL MODEL TRAINING")
     print("="*50 + "\n")
 
-    print("📂 STEP 1: Loading dataset …")
+    print(" STEP 1: Loading dataset …")
     X, y, df = load_dataset(DATASET_DIR)
 
-    print("✂️  STEP 2: Train/test split …")
+    print(" STEP 2: Train/test split …")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y)
     print(f"   Train: {len(X_train)}  |  Test: {len(X_test)}\n")
 
-    print("📐 STEP 3: Normalizing …")
+    print(" STEP 3: Normalizing …")
     X_tr_s, X_te_s, scaler = normalize(X_train, X_test)
 
-    print("🤖 STEP 4: Training models …")
+    print("STEP 4: Training models …")
     svm_model = train_svm(X_tr_s, y_tr_s := y_train)
     lr_model  = train_logistic(X_tr_s, y_train)
 
-    print("📊 STEP 5: Evaluating …\n")
+    print(" STEP 5: Evaluating …\n")
     svm_pred, svm_acc = evaluate(svm_model, X_te_s, y_test, "SVM")
     lr_pred,  lr_acc  = evaluate(lr_model,  X_te_s, y_test, "Logistic Regression")
 
-    print("🎨 STEP 6: Plotting …")
+    print(" STEP 6: Plotting …")
     plot_results(svm_model, lr_model, X_te_s, y_test,
                  svm_pred, lr_pred, df, svm_acc, lr_acc)
 
-    print("\n💾 STEP 7: Saving models …")
+    print("\n STEP 7: Saving models …")
     save_all(svm_model, lr_model, scaler)
 
-    print("\n✅  Done! Run  python app.py  to launch the web app.\n")
+    print("\nDone! Run  python app.py  to launch the web app.\n")

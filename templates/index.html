@@ -2,824 +2,191 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PulmAI · TB Detection</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TB Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.4rem;
+      color: #00cfff;
+      text-align: center;
+    }
+
+    p.subtitle {
+      color: #888;
+      margin-bottom: 2rem;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #333;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      margin-bottom: 1.2rem;
+    }
+
+    .drop-zone:hover { border-color: #00cfff; }
+
+    .drop-zone img {
+      max-width: 100%;
+      max-height: 280px;
+      border-radius: 8px;
+      display: none;
+      margin: 0 auto;
+    }
+
+    .drop-zone .placeholder {
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    input[type="file"] { display: none; }
+
+    .filename {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.9rem;
+      background: #00cfff;
+      color: #000;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button[type="submit"]:hover { background: #00aadd; }
+    button[type="submit"]:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+    .result-box {
+      margin-top: 1.5rem;
+      padding: 1rem 1.4rem;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .result-normal {
+      background: #0f2d1a;
+      border: 1px solid #1a5c30;
+      color: #4caf82;
+    }
+
+    .result-tb {
+      background: #2d0f0f;
+      border: 1px solid #5c1a1a;
+      color: #e57373;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #888;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 <body>
 
-<!-- ░░ BACKGROUND ░░ -->
-<div class="bg-grid" aria-hidden="true"></div>
-<div class="bg-glow" aria-hidden="true"></div>
+  <h1>🫁 TB Detection</h1>
+  <p class="subtitle">Upload a chest X-ray to detect Tuberculosis</p>
 
-<!-- ░░ HEADER ░░ -->
-<header class="site-header">
-  <div class="header-inner">
-    <div class="logo">
-      <svg class="lung-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M18 4v10M18 14c-3-1-7 0-9 4s-2 8 0 12 5 4 7 3l2-1 2 1c2 1 5 1 7-3s2-8 0-12-6-5-9-4z"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="13" cy="22" r="2" fill="currentColor" opacity=".5"/>
-        <circle cx="23" cy="22" r="2" fill="currentColor" opacity=".5"/>
-      </svg>
-      <span>PulmAI</span>
-    </div>
-    <div class="header-right">
-      <span class="nav-tag">Scientific Python · Mini Project</span>
-      <button class="history-header-btn" id="historyTopBtn" type="button">
-        📋 History
-      </button>
-    </div>
-  </div>
-</header>
+  <div class="card">
+    <!-- KEY FIX: action="/predict" method="POST" enctype="multipart/form-data"
+         This submits directly to Flask — no JavaScript fetch needed -->
+    <form action="/predict" method="POST" enctype="multipart/form-data" id="uploadForm">
 
-<!-- ░░ HERO ░░ -->
-<section class="hero">
-  <div class="hero-text">
-    <p class="hero-eyebrow">AI-Assisted Diagnosis</p>
-    <h1 class="hero-title">Tuberculosis<br/><em>Detection</em></h1>
-    <p class="hero-sub">Upload a chest X-ray, get instant AI classification with severity scoring, dual-model comparison, lung edge highlighting, and a downloadable PDF report.</p>
-  </div>
-  <div class="hero-badges">
-    <span class="badge">SVM · LR</span>
-    <span class="badge">Scikit-learn</span>
-    <span class="badge">OpenCV</span>
-    <span class="badge">Flask API</span>
-    <span class="badge">PDF Report</span>
-  </div>
-</section>
-
-<!-- ░░ MAIN ░░ -->
-<main class="main-content">
-
-  <!-- ── Upload Card ─────────────────────────────────────── -->
-  <div class="card upload-card">
-    <div class="upload-zone" id="uploadZone" tabindex="0" role="button"
-         aria-label="Click or drag to upload chest X-ray">
-
-      <div class="upload-idle" id="uploadIdle">
-        <div class="upload-icon-wrap">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="6" width="36" height="36" rx="8" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"/>
-            <path d="M24 30V18M18 24l6-6 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <p class="upload-prompt">Drag &amp; drop your X-ray here</p>
-        <p class="upload-hint">or click to browse · JPG, PNG · max 10 MB</p>
-      </div>
-
-      <div class="upload-preview" id="uploadPreview" style="display:none;">
-        <img id="previewImg" src="" alt="Selected X-ray" />
-        <div class="preview-overlay">
-          <span id="previewName" class="preview-name"></span>
-          <button class="change-btn" id="changeBtn" type="button">Change</button>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <img id="preview" src="" alt="Preview"/>
+        <div class="placeholder" id="placeholder">
+          📁 Click to upload X-ray image<br>
+          <small>PNG, JPG, JPEG supported</small>
         </div>
       </div>
 
-      <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" aria-label="Upload X-ray" />
-    </div>
+      <input type="file" id="fileInput" name="file" accept="image/*" required>
+      <div class="filename" id="fileName"></div>
 
-    <button class="analyse-btn" id="analyseBtn" type="button" disabled>
-      <span class="btn-text">Analyse X-Ray</span>
-      <span class="btn-icon" aria-hidden="true">→</span>
-      <span class="btn-loader" id="btnLoader" aria-hidden="true"></span>
-    </button>
+      <br>
+      <button type="submit" id="submitBtn">Analyse X-Ray →</button>
+      <div class="loading" id="loading">⏳ Analysing... please wait</div>
+    </form>
+
+    {% if result %}
+      <div class="result-box {% if 'TB' in result %}result-tb{% else %}result-normal{% endif %}">
+        {% if 'TB' in result %}
+          ⚠️ Result: {{ result }}
+        {% else %}
+          ✅ Result: {{ result }}
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 
-  <!-- ── Error Box ─────────────────────────────────────────── -->
-  <div class="error-box" id="errorBox" style="display:none;" role="alert">
-    <span class="error-icon" aria-hidden="true">✕</span>
-    <p id="errorMsg">Something went wrong.</p>
-    <button class="error-close" id="errorClose" type="button">✕</button>
-  </div>
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const preview   = document.getElementById('preview');
+    const placeholder = document.getElementById('placeholder');
+    const fileName  = document.getElementById('fileName');
+    const form      = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loading   = document.getElementById('loading');
+
+    fileInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      fileName.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Analysing...';
+      loading.style.display = 'block';
+    });
+  </script>
 
-  <!-- ══════════════════════════════════════════════════════ -->
-  <!--  RESULT CARD (hidden until first prediction)          -->
-  <!-- ══════════════════════════════════════════════════════ -->
-  <div class="card result-card" id="resultCard" style="display:none;" aria-live="polite">
-
-    <!-- Header row -->
-    <div class="result-header">
-      <div class="result-header-left">
-        <span class="result-label" id="resultLabel">—</span>
-        <span class="result-badge" id="resultBadge"></span>
-        <span class="severity-chip" id="severityChip"></span>
-      </div>
-      <button class="report-btn" id="reportBtn" type="button">
-        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-          <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M9 2v5h5M7 13h6M7 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        Download Report
-      </button>
-    </div>
-
-    <!-- ── TABS ───────────────────────────────────────────── -->
-    <div class="tabs" role="tablist">
-      <button class="tab-btn active" data-tab="overview"  role="tab">Overview</button>
-      <button class="tab-btn"        data-tab="pipeline"  role="tab">Pipeline</button>
-      <button class="tab-btn"        data-tab="edge"      role="tab">Edge View</button>
-      <button class="tab-btn"        data-tab="models"    role="tab">Models</button>
-      <button class="tab-btn"        data-tab="history"   role="tab">History</button>
-    </div>
-
-    <!-- ── TAB: Overview ──────────────────────────────────── -->
-    <div class="tab-panel active" id="tab-overview">
-      <div class="overview-grid">
-
-        <!-- X-ray with scan animation -->
-        <div class="result-image-wrap">
-          <img id="resultImg" src="" alt="Analysed X-ray" />
-          <div class="scan-line" id="scanLine" aria-hidden="true"></div>
-        </div>
-
-        <!-- Right panel -->
-        <div class="overview-right">
-
-          <!-- Confidence -->
-          <div class="metric-block">
-            <p class="metric-label">Model Confidence</p>
-            <div class="conf-track">
-              <div class="conf-fill" id="confFill"></div>
-            </div>
-            <p class="conf-value" id="confValue">—</p>
-          </div>
-
-          <!-- Severity bar -->
-          <div class="metric-block">
-            <p class="metric-label">Severity Level</p>
-            <div class="sev-track">
-              <div class="sev-fill" id="sevFill"></div>
-            </div>
-            <p class="sev-label-text" id="sevText">—</p>
-          </div>
-
-          <!-- Info grid -->
-          <div class="info-grid">
-            <div class="info-item">
-              <p class="info-key">Class</p>
-              <p class="info-val" id="infoClass">—</p>
-            </div>
-            <div class="info-item">
-              <p class="info-key">Algorithm</p>
-              <p class="info-val">SVM · RBF</p>
-            </div>
-            <div class="info-item">
-              <p class="info-key">Brightness</p>
-              <p class="info-val" id="statBright">—</p>
-            </div>
-            <div class="info-item">
-              <p class="info-key">Contrast</p>
-              <p class="info-val" id="statContrast">—</p>
-            </div>
-            <div class="info-item">
-              <p class="info-key">Sharpness</p>
-              <p class="info-val" id="statSharp">—</p>
-            </div>
-            <div class="info-item">
-              <p class="info-key">Features</p>
-              <p class="info-val">4 096</p>
-            </div>
-          </div>
-
-          <div class="disclaimer">
-            ⚠ For <strong>educational use only</strong>. Not a substitute for medical diagnosis.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── TAB: Pipeline ──────────────────────────────────── -->
-    <div class="tab-panel" id="tab-pipeline">
-      <p class="tab-desc">How the image is transformed before being fed into the ML model:</p>
-      <div class="pipeline-grid" id="pipelineGrid">
-        <!-- Populated by JS -->
-      </div>
-      <div class="pipeline-arrow-row">
-        <span>Raw Upload</span>
-        <span class="pipeline-arrow">→</span>
-        <span>Grayscale</span>
-        <span class="pipeline-arrow">→</span>
-        <span>Resize</span>
-        <span class="pipeline-arrow">→</span>
-        <span>Edges</span>
-        <span class="pipeline-arrow">→</span>
-        <span class="pipeline-highlight">Flatten → Scale → SVM</span>
-      </div>
-    </div>
-
-    <!-- ── TAB: Edge View ─────────────────────────────────── -->
-    <div class="tab-panel" id="tab-edge">
-      <p class="tab-desc">Lung boundary detection using CLAHE-enhanced Canny edge detection. <strong style="color:var(--teal)">Teal highlights</strong> mark detected structures.</p>
-      <div class="edge-view-wrap">
-        <div class="edge-compare">
-          <div class="edge-img-box">
-            <p class="edge-cap">Original</p>
-            <img id="edgeOriginal" src="" alt="Original X-ray" />
-          </div>
-          <div class="edge-img-box">
-            <p class="edge-cap">Edge Overlay</p>
-            <img id="edgeOverlay" src="" alt="Edge overlay" />
-          </div>
-        </div>
-        <div class="edge-info">
-          <div class="edge-info-item"><span class="ei-key">Algorithm</span><span class="ei-val">Canny Edge Detection</span></div>
-          <div class="edge-info-item"><span class="ei-key">Enhancement</span><span class="ei-val">CLAHE (Contrast Limited)</span></div>
-          <div class="edge-info-item"><span class="ei-key">Highlight</span><span class="ei-val" style="color:var(--teal)">Teal (#00DDB4)</span></div>
-          <div class="edge-info-item"><span class="ei-key">Blend</span><span class="ei-val">65% Original + 35% Overlay</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── TAB: Models ────────────────────────────────────── -->
-    <div class="tab-panel" id="tab-models">
-      <p class="tab-desc">Comparison of two machine learning models run on the same image:</p>
-      <div class="models-grid">
-
-        <!-- SVM card -->
-        <div class="model-card" id="svmCard">
-          <div class="model-top">
-            <div class="model-name">Support Vector Machine</div>
-            <div class="model-tag">PRIMARY</div>
-          </div>
-          <div class="model-result" id="svmResult">—</div>
-          <div class="model-conf-track">
-            <div class="model-conf-fill" id="svmFill"></div>
-          </div>
-          <div class="model-conf-value" id="svmConf">—</div>
-          <div class="model-meta">
-            <span>Kernel: RBF</span>
-            <span>C: 1.0</span>
-            <span>gamma: scale</span>
-          </div>
-        </div>
-
-        <!-- Divider -->
-        <div class="model-vs">
-          <div class="vs-line"></div>
-          <span class="vs-text">VS</span>
-          <div class="vs-line"></div>
-          <div class="agreement-box" id="agreementBox">
-            <span id="agreementIcon">?</span>
-            <span id="agreementText">Waiting…</span>
-          </div>
-        </div>
-
-        <!-- LR card -->
-        <div class="model-card" id="lrCard">
-          <div class="model-top">
-            <div class="model-name">Logistic Regression</div>
-            <div class="model-tag secondary">SECONDARY</div>
-          </div>
-          <div class="model-result" id="lrResult">—</div>
-          <div class="model-conf-track">
-            <div class="model-conf-fill" id="lrFill"></div>
-          </div>
-          <div class="model-conf-value" id="lrConf">—</div>
-          <div class="model-meta">
-            <span>Solver: lbfgs</span>
-            <span>max_iter: 1000</span>
-            <span>Binary</span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ── TAB: History ───────────────────────────────────── -->
-    <div class="tab-panel" id="tab-history">
-      <div class="history-header">
-        <p class="tab-desc" style="margin:0;">Last 25 scans performed in this session:</p>
-        <button class="clear-history-btn" id="clearHistoryBtn" type="button">Clear All</button>
-      </div>
-      <div class="history-table-wrap">
-        <table class="history-table" id="historyTable">
-          <thead>
-            <tr>
-              <th>Date &amp; Time</th>
-              <th>File</th>
-              <th>Result</th>
-              <th>Confidence</th>
-              <th>Severity</th>
-            </tr>
-          </thead>
-          <tbody id="historyBody">
-            <tr><td colspan="5" class="history-empty">No history yet.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </div><!-- /.result-card -->
-
-  <!-- ══════════════════════════════════════════════════════ -->
-  <!--  SYMPTOM CHECKER (shown after first prediction)       -->
-  <!-- ══════════════════════════════════════════════════════ -->
-  <div class="card symptom-card" id="symptomCard" style="display:none;">
-    <div class="symptom-header">
-      <div>
-        <h2 class="symptom-title">🩺 Clinical Symptom Checker</h2>
-        <p class="symptom-sub">Select all symptoms you are currently experiencing:</p>
-      </div>
-      <div class="combined-score-wrap" id="combinedWrap" style="display:none;">
-        <p class="cs-label">Combined Risk</p>
-        <p class="cs-value" id="combinedScore">—</p>
-      </div>
-    </div>
-
-    <div class="symptom-grid">
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="20" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Persistent Cough</strong>
-          <small>Lasting more than 2 weeks</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="25" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Blood in Sputum</strong>
-          <small>Hemoptysis — most diagnostic</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="15" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Fever &amp; Chills</strong>
-          <small>Especially in the evening</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="15" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Night Sweats</strong>
-          <small>Drenching sweats during sleep</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="15" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Unexplained Weight Loss</strong>
-          <small>Without change in diet</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="10" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Chest Pain</strong>
-          <small>Especially when breathing</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="10" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Severe Fatigue</strong>
-          <small>Unusual tiredness / weakness</small>
-        </span>
-      </label>
-      <label class="symptom-item">
-        <input type="checkbox" class="symptom-cb" data-weight="10" />
-        <span class="cb-box"></span>
-        <span class="cb-text">
-          <strong>Loss of Appetite</strong>
-          <small>Reduced desire to eat</small>
-        </span>
-      </label>
-    </div><!-- /.symptom-grid -->
-
-    <!-- Clinical risk result -->
-    <div class="clinical-result">
-      <div class="clinical-left">
-        <p class="metric-label">Clinical Risk Score</p>
-        <div class="conf-track">
-          <div class="conf-fill clinical-fill" id="clinicalFill" style="width:0%"></div>
-        </div>
-        <div class="clinical-row">
-          <span class="conf-value" id="clinicalScore">0%</span>
-          <span class="clinical-badge" id="clinicalBadge">No Symptoms</span>
-        </div>
-      </div>
-      <div class="clinical-right" id="combinedAssess" style="display:none;">
-        <p class="metric-label">Combined Assessment</p>
-        <p class="combined-value" id="combinedValue">—</p>
-        <p class="combined-desc" id="combinedDesc">—</p>
-      </div>
-    </div>
-
-    <p class="symptom-note">
-      ⚠ This symptom checker is for educational illustration only. Symptom weights are approximate and not clinically validated. Always consult a doctor.
-    </p>
-  </div><!-- /.symptom-card -->
-
-</main>
-
-<!-- ░░ HOW IT WORKS ░░ -->
-<section class="how-it-works">
-  <h2 class="section-title">How It Works</h2>
-  <div class="steps-grid">
-    <div class="step-card">
-      <span class="step-num">01</span>
-      <h3>Upload X-Ray</h3>
-      <p>Choose a chest X-ray JPG or PNG. Drag-and-drop is supported.</p>
-    </div>
-    <div class="step-card">
-      <span class="step-num">02</span>
-      <h3>Preprocessing</h3>
-      <p>Grayscale conversion → resize to 64×64 → flatten to 4,096 features → StandardScaler normalisation.</p>
-    </div>
-    <div class="step-card">
-      <span class="step-num">03</span>
-      <h3>Dual Inference</h3>
-      <p>SVM (RBF kernel) and Logistic Regression both classify the feature vector independently.</p>
-    </div>
-    <div class="step-card">
-      <span class="step-num">04</span>
-      <h3>Full Report</h3>
-      <p>Severity scoring, edge overlay, preprocessing pipeline view, symptom checker, and a downloadable PDF.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ░░ FOOTER ░░ -->
-<footer class="site-footer">
-  <p>Built with Python · Flask · Scikit-learn · OpenCV · ReportLab &nbsp;|&nbsp; ECE Mini Project 2025–26</p>
-</footer>
-
-<!-- ══════════════════════════════════════════════════════ -->
-<!--  JAVASCRIPT                                           -->
-<!-- ══════════════════════════════════════════════════════ -->
-<script>
-/* ─── Element refs ─────────────────────────────────────── */
-const uploadZone    = document.getElementById("uploadZone");
-const fileInput     = document.getElementById("fileInput");
-const uploadIdle    = document.getElementById("uploadIdle");
-const uploadPreview = document.getElementById("uploadPreview");
-const previewImg    = document.getElementById("previewImg");
-const previewName   = document.getElementById("previewName");
-const changeBtn     = document.getElementById("changeBtn");
-const analyseBtn    = document.getElementById("analyseBtn");
-const btnLoader     = document.getElementById("btnLoader");
-
-const resultCard    = document.getElementById("resultCard");
-const errorBox      = document.getElementById("errorBox");
-const errorMsg      = document.getElementById("errorMsg");
-const errorClose    = document.getElementById("errorClose");
-
-const symptomCard   = document.getElementById("symptomCard");
-const reportBtn     = document.getElementById("reportBtn");
-const historyTopBtn = document.getElementById("historyTopBtn");
-
-let selectedFile    = null;
-let currentResult   = null;   // stores last API response
-
-/* ─── Utility ──────────────────────────────────────────── */
-const $ = id => document.getElementById(id);
-
-function showError(msg) {
-  errorMsg.textContent = msg;
-  errorBox.style.display = "flex";
-}
-function hideError() { errorBox.style.display = "none"; }
-
-function setLoading(on) {
-  analyseBtn.disabled = on;
-  analyseBtn.classList.toggle("loading", on);
-  btnLoader.style.display = on ? "inline-block" : "none";
-}
-
-function animateBar(el, pct, delay = 80) {
-  el.style.width = "0%";
-  requestAnimationFrame(() => {
-    setTimeout(() => { el.style.width = pct + "%"; }, delay);
-  });
-}
-
-/* ─── File handling ────────────────────────────────────── */
-function handleFile(file) {
-  if (!file) return;
-  const validTypes = ["image/jpeg", "image/jpg", "image/png"];
-  if (!validTypes.includes(file.type)) {
-    showError("Invalid type. Upload a JPG or PNG image."); return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    showError("File too large (max 10 MB)."); return;
-  }
-  hideError();
-  selectedFile = file;
-  const reader = new FileReader();
-  reader.onload = e => {
-    previewImg.src = e.target.result;
-    previewName.textContent = file.name;
-    uploadIdle.style.display = "none";
-    uploadPreview.style.display = "flex";
-    analyseBtn.disabled = false;
-  };
-  reader.readAsDataURL(file);
-}
-
-uploadZone.addEventListener("click", e => {
-  if (e.target !== changeBtn) fileInput.click();
-});
-uploadZone.addEventListener("keydown", e => {
-  if (e.key === "Enter" || e.key === " ") fileInput.click();
-});
-fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
-
-changeBtn.addEventListener("click", e => {
-  e.stopPropagation();
-  fileInput.value = ""; selectedFile = null;
-  uploadPreview.style.display = "none";
-  uploadIdle.style.display    = "flex";
-  analyseBtn.disabled = true;
-  resultCard.style.display = "none";
-  symptomCard.style.display = "none";
-});
-
-uploadZone.addEventListener("dragover", e => {
-  e.preventDefault(); uploadZone.classList.add("drag-over");
-});
-uploadZone.addEventListener("dragleave", () => {
-  uploadZone.classList.remove("drag-over");
-});
-uploadZone.addEventListener("drop", e => {
-  e.preventDefault(); uploadZone.classList.remove("drag-over");
-  handleFile(e.dataTransfer.files[0]);
-});
-
-/* ─── Tab switching ────────────────────────────────────── */
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-
-    // Lazy-load history when that tab is clicked
-    if (btn.dataset.tab === "history") loadHistory();
-  });
-});
-
-/* ─── Prediction ───────────────────────────────────────── */
-analyseBtn.addEventListener("click", async () => {
-  if (!selectedFile) { showError("Please select an X-ray first."); return; }
-  hideError();
-  setLoading(true);
-  resultCard.style.display  = "none";
-  symptomCard.style.display = "none";
-
-  const form = new FormData();
-  form.append("file", selectedFile);
-
-  try {
-    const res  = await fetch("/predict", { method: "POST", body: form });
-    const data = await res.json();
-
-    if (!data.success) { showError(data.error || "Prediction failed."); return; }
-
-    currentResult = data;
-    renderResult(data);
-
-  } catch (err) {
-    showError("Network error — is the Flask server running?");
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-});
-
-/* ─── Render all result sections ──────────────────────── */
-function renderResult(d) {
-  const isTB = d.prediction === "TB";
-
-  /* ── Header ─────────────────────────────────────────── */
-  const lbl = $("resultLabel");
-  lbl.textContent = d.prediction;
-  lbl.className   = "result-label " + (isTB ? "label-tb" : "label-normal");
-
-  const badge = $("resultBadge");
-  badge.textContent = isTB ? "⚠ TB Detected" : "✓ No TB Detected";
-  badge.className   = "result-badge " + (isTB ? "badge-tb" : "badge-normal");
-
-  const sev = $("severityChip");
-  sev.textContent = d.severity;
-  sev.className   = "severity-chip sev-" + d.severity_key;
-
-  /* ── Tab: Overview ──────────────────────────────────── */
-  $("resultImg").src = "data:image/jpeg;base64," + d.image_b64;
-
-  // Confidence bar
-  const confFill = $("confFill");
-  confFill.className = "conf-fill " + (isTB ? "fill-tb" : "fill-normal");
-  animateBar(confFill, d.confidence);
-  $("confValue").textContent = d.confidence.toFixed(1) + "%";
-
-  // Severity bar
-  const sevMap = { "critical": 100, "high": 75, "moderate": 50,
-                   "low": 25, "very-low": 15, "clear": 10 };
-  const sevPct = sevMap[d.severity_key] ?? 50;
-  const sevFill = $("sevFill");
-  sevFill.className = "sev-fill sev-fill-" + d.severity_key;
-  animateBar(sevFill, sevPct, 120);
-  $("sevText").textContent = d.severity;
-
-  // Info grid
-  $("infoClass").textContent   = d.prediction;
-  $("infoClass").style.color   = isTB ? "var(--tb)" : "var(--normal)";
-  $("statBright").textContent  = d.image_stats.brightness;
-  $("statContrast").textContent = d.image_stats.contrast;
-  $("statSharp").textContent   = d.image_stats.sharpness;
-
-  // Scan line animation
-  const sl = $("scanLine");
-  sl.classList.remove("scan-active");
-  void sl.offsetWidth;
-  sl.classList.add("scan-active");
-
-  /* ── Tab: Pipeline ──────────────────────────────────── */
-  const grid = $("pipelineGrid");
-  grid.innerHTML = "";
-  (d.pipeline || []).forEach(step => {
-    const box = document.createElement("div");
-    box.className = "pipeline-step";
-    box.innerHTML = `
-      <div class="pipeline-img-wrap">
-        <img src="data:image/jpeg;base64,${step.b64}" alt="${step.label}" />
-      </div>
-      <p class="pipeline-step-label">${step.label}</p>
-      <p class="pipeline-step-desc">${step.desc}</p>
-    `;
-    grid.appendChild(box);
-  });
-
-  /* ── Tab: Edge View ─────────────────────────────────── */
-  $("edgeOriginal").src = "data:image/jpeg;base64," + d.image_b64;
-  $("edgeOverlay").src  = "data:image/jpeg;base64," + d.edge_b64;
-
-  /* ── Tab: Models ────────────────────────────────────── */
-  const svm = d.svm;
-  const lr  = d.lr;
-
-  // SVM
-  const svmRes = $("svmResult");
-  svmRes.textContent = svm.prediction;
-  svmRes.className   = "model-result " + (svm.prediction === "TB" ? "mr-tb" : "mr-normal");
-  const svmFill = $("svmFill");
-  svmFill.className  = "model-conf-fill " + (svm.prediction === "TB" ? "fill-tb" : "fill-normal");
-  animateBar(svmFill, svm.confidence, 100);
-  $("svmConf").textContent = svm.confidence.toFixed(1) + "%";
-
-  // LR
-  if (lr && lr.prediction) {
-    const lrRes = $("lrResult");
-    lrRes.textContent = lr.prediction;
-    lrRes.className   = "model-result " + (lr.prediction === "TB" ? "mr-tb" : "mr-normal");
-    const lrFill = $("lrFill");
-    lrFill.className  = "model-conf-fill " + (lr.prediction === "TB" ? "fill-tb" : "fill-normal");
-    animateBar(lrFill, lr.confidence, 130);
-    $("lrConf").textContent = lr.confidence.toFixed(1) + "%";
-  } else {
-    $("lrResult").textContent = "N/A";
-    $("lrConf").textContent   = "Run train_model.py";
-  }
-
-  // Agreement badge
-  const agree = lr && lr.prediction && (lr.prediction === svm.prediction);
-  const agreeBox = $("agreementBox");
-  $("agreementIcon").textContent = agree ? "✓" : "✗";
-  $("agreementText").textContent = agree ? "Models Agree" : "Models Differ";
-  agreeBox.className = "agreement-box " + (agree ? "agree-yes" : "agree-no");
-
-  /* ── Show cards ─────────────────────────────────────── */
-  resultCard.style.display  = "block";
-  symptomCard.style.display = "block";
-
-  // Reset symptom checker
-  document.querySelectorAll(".symptom-cb").forEach(cb => cb.checked = false);
-  updateSymptomScore();
-
-  // Switch to overview tab
-  document.querySelector("[data-tab='overview']").click();
-
-  resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-/* ─── Symptom checker ──────────────────────────────────── */
-const MAX_WEIGHT = 120; // sum of all weights: 20+25+15+15+15+10+10+10
-
-function updateSymptomScore() {
-  let score = 0;
-  document.querySelectorAll(".symptom-cb:checked").forEach(cb => {
-    score += parseInt(cb.dataset.weight);
-  });
-  const pct = Math.min(Math.round((score / MAX_WEIGHT) * 100), 100);
-
-  // Clinical fill
-  const fill = $("clinicalFill");
-  fill.style.width = pct + "%";
-  fill.style.background = pct > 60 ? "var(--tb)"
-                        : pct > 30 ? "#f97316"
-                        :            "var(--normal)";
-  $("clinicalScore").textContent = pct + "%";
-
-  // Clinical badge text
-  const badge = $("clinicalBadge");
-  if (pct === 0) { badge.textContent = "No Symptoms"; badge.className = "clinical-badge cb-none"; }
-  else if (pct < 30) { badge.textContent = "Low Risk";      badge.className = "clinical-badge cb-low"; }
-  else if (pct < 60) { badge.textContent = "Moderate Risk"; badge.className = "clinical-badge cb-moderate"; }
-  else if (pct < 80) { badge.textContent = "High Risk";     badge.className = "clinical-badge cb-high"; }
-  else               { badge.textContent = "Very High Risk"; badge.className = "clinical-badge cb-critical"; }
-
-  // Combined assessment (only if we have an ML result)
-  const combinedAssess = $("combinedAssess");
-  if (currentResult) {
-    const isTB   = currentResult.prediction === "TB";
-    const mlConf = currentResult.confidence;
-
-    let combined;
-    if (isTB) {
-      combined = Math.round(0.65 * mlConf + 0.35 * pct);
-    } else {
-      // Normal + symptoms → clinical risk dominates warning
-      combined = Math.round(0.35 * (100 - mlConf) + 0.65 * pct);
-    }
-
-    let desc, color;
-    if (combined < 20)       { desc = "Very Low Combined Risk";  color = "var(--normal)"; }
-    else if (combined < 45)  { desc = "Moderate Combined Risk";  color = "#eab308"; }
-    else if (combined < 70)  { desc = "High Combined Risk";      color = "#f97316"; }
-    else                     { desc = "Critical Combined Risk";  color = "var(--tb)"; }
-
-    $("combinedValue").textContent = combined + "%";
-    $("combinedValue").style.color = color;
-    $("combinedDesc").textContent  = desc;
-    combinedAssess.style.display   = "flex";
-  } else {
-    combinedAssess.style.display = "none";
-  }
-}
-
-document.querySelectorAll(".symptom-cb").forEach(cb => {
-  cb.addEventListener("change", updateSymptomScore);
-});
-
-/* ─── History ──────────────────────────────────────────── */
-async function loadHistory() {
-  try {
-    const res  = await fetch("/history");
-    const data = await res.json();
-    const body = $("historyBody");
-    if (!data.length) {
-      body.innerHTML = '<tr><td colspan="5" class="history-empty">No history yet.</td></tr>';
-      return;
-    }
-    body.innerHTML = data.map(r => `
-      <tr>
-        <td>${r.timestamp}</td>
-        <td class="history-file">${r.filename}</td>
-        <td class="${r.prediction === 'TB' ? 'hist-tb' : 'hist-normal'}">${r.prediction}</td>
-        <td>${r.confidence}%</td>
-        <td>${r.severity}</td>
-      </tr>
-    `).join("");
-  } catch (e) {
-    console.error("History load failed:", e);
-  }
-}
-
-$("clearHistoryBtn").addEventListener("click", async () => {
-  if (!confirm("Clear all prediction history?")) return;
-  await fetch("/history/clear", { method: "POST" });
-  $("historyBody").innerHTML =
-    '<tr><td colspan="5" class="history-empty">History cleared.</td></tr>';
-});
-
-historyTopBtn.addEventListener("click", () => {
-  // Switch to history tab (if result card is open) or scroll
-  if (resultCard.style.display !== "none") {
-    document.querySelector("[data-tab='history']").click();
-    resultCard.scrollIntoView({ behavior: "smooth" });
-  } else {
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-  }
-});
-
-/* ─── PDF report ───────────────────────────────────────── */
-reportBtn.addEventListener("click", () => {
-  window.open("/report", "_blank");
-});
-
-/* ─── Error dismiss ────────────────────────────────────── */
-errorClose.addEventListener("click", hideError);
-</script>
 </body>
 </html>
